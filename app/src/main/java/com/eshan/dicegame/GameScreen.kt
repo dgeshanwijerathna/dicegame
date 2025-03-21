@@ -65,27 +65,27 @@ fun GameScreen() {
         ) {
             Button(
                 onClick = {
-                    if (rollsLeft == 3) {
+                    if (rollsLeft == 3) { // New Round
                         playerScore = 0
                         computerScore = 0
                         isNewRound = true
                     }
 
                     if (rollsLeft > 0) {
-                        // Player Dice Roll
+                        // Player Dice Roll (rolls unselected dice)
                         playerDice = playerDice.mapIndexed { index, value ->
                             if (rollsLeft == 3 || !selectedDice[index]) Random.nextInt(1, 7) else value
                         }
 
-                        // Computer Dice Roll with Strategy
-                        computerDice = computerDice.map {
-                            if (rollsLeft == 3 || it < 4) Random.nextInt(1, 7) else it
+                        // Computer's First Roll (only happens when rollsLeft == 3)
+                        if (rollsLeft == 3) {
+                            computerDice = List(5) { Random.nextInt(1, 7) } // First full roll
                         }
 
-                        rollsLeft--
+                        rollsLeft-- // Reduce roll count
 
                         if (rollsLeft == 0) {
-                            // Auto-score after the last roll
+                            // Auto-score after last roll
                             updateScore(
                                 playerDice,
                                 computerDice,
@@ -97,7 +97,6 @@ fun GameScreen() {
                             selectedDice = List(5) { false } // Reset selections
                         }
                     }
-
                 },
                 shape = RoundedCornerShape(10.dp),
                 enabled = rollsLeft > 0
@@ -105,8 +104,16 @@ fun GameScreen() {
                 Text(if (rollsLeft == 3) "Throw" else "Re-throw ($rollsLeft left)", fontSize = 18.sp)
             }
 
+
             Button(
                 onClick = {
+                    // Let the computer use its remaining rolls randomly
+                    repeat(rollsLeft) {
+                        computerDice = computerDice.map {
+                            if (Random.nextBoolean()) Random.nextInt(1, 7) else it // Randomly decide to reroll
+                        }
+                    }
+
                     updateScore(
                         playerDice,
                         computerDice,
@@ -114,6 +121,7 @@ fun GameScreen() {
                         { score -> playerScore += score },
                         { score -> computerScore += score }
                     )
+
                     rollsLeft = 3 // Reset for next round
                     selectedDice = List(5) { false } // Reset selections
                 },
@@ -122,6 +130,7 @@ fun GameScreen() {
             ) {
                 Text("Score", fontSize = 18.sp)
             }
+
         }
     }
 }
