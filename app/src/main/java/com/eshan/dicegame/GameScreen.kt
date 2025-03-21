@@ -74,7 +74,7 @@ fun GameScreen() {
                     if (rollsLeft > 0) {
                         // Player Dice Roll
                         playerDice = playerDice.mapIndexed { index, value ->
-                            if (rollsLeft == 3 || selectedDice[index]) Random.nextInt(1, 7) else value
+                            if (rollsLeft == 3 || !selectedDice[index]) Random.nextInt(1, 7) else value
                         }
 
                         // Computer Dice Roll with Strategy
@@ -97,6 +97,7 @@ fun GameScreen() {
                             selectedDice = List(5) { false } // Reset selections
                         }
                     }
+
                 },
                 shape = RoundedCornerShape(10.dp),
                 enabled = rollsLeft > 0
