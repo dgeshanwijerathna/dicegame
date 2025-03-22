@@ -1,5 +1,6 @@
 package com.eshan.dicegame
 
+import android.app.Activity
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -7,9 +8,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -17,19 +20,26 @@ import kotlin.random.Random
 
 @Composable
 fun GameScreen() {
-    var targetScore by remember { mutableStateOf(101) }
-    var targetInput by remember { mutableStateOf("101") }
-    var gameStarted by remember { mutableStateOf(false) }
-    var playerDice by remember { mutableStateOf(List(5) { Random.nextInt(1, 7) }) }
-    var selectedDice by remember { mutableStateOf(List(5) { false }) }
-    var computerDice by remember { mutableStateOf(List(5) { Random.nextInt(1, 7) }) }
-    var playerScore by remember { mutableStateOf(0) }
-    var computerScore by remember { mutableStateOf(0) }
-    var rollsLeft by remember { mutableStateOf(3) }
-    var winner by remember { mutableStateOf<String?>(null) }
+    var targetScore by rememberSaveable { mutableStateOf(101) }
+    var targetInput by rememberSaveable { mutableStateOf("101") }
+    var gameStarted by rememberSaveable { mutableStateOf(false) }
+    var playerScore by rememberSaveable { mutableStateOf(0) }
+    var computerScore by rememberSaveable { mutableStateOf(0) }
+    var rollsLeft by rememberSaveable { mutableStateOf(3) }
+    var winner by rememberSaveable { mutableStateOf<String?>(null) }
+    var playerDice by rememberSaveable { mutableStateOf(List(5) { Random.nextInt(1, 7) }) }
+    var computerDice by rememberSaveable { mutableStateOf(List(5) { Random.nextInt(1, 7) }) }
+    var selectedDice by rememberSaveable { mutableStateOf(List(5) { false }) }
+
+
+    // Track total wins for both players (resets when the app restarts)
+    var humanWins by rememberSaveable { mutableStateOf(0) }
+    var computerWins by rememberSaveable { mutableStateOf(0) }
+
 
     if (!gameStarted) {
-        var errorMessage by remember { mutableStateOf<String?>(null) }
+        var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
+
 
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -41,7 +51,7 @@ fun GameScreen() {
                 value = targetInput,
                 onValueChange = {
                     targetInput = it
-                    errorMessage = null  // Clear error when user starts typing
+                    errorMessage = null
                 },
                 label = { Text("Target Score") }
             )
@@ -58,7 +68,7 @@ fun GameScreen() {
                 val inputNumber = targetInput.toIntOrNull()
                 when {
                     inputNumber == null -> errorMessage = "Invalid input! Please enter a valid number."
-                    inputNumber < 50 -> errorMessage = "Target score must be at least 50. Please enter a higher value."
+                    inputNumber < 101 -> errorMessage = "Target score must be at least 101. Please enter a higher value."
                     else -> {
                         targetScore = inputNumber
                         gameStarted = true
@@ -74,6 +84,11 @@ fun GameScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            // Display total wins at the top left
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                Text("H:$humanWins / C:$computerWins", fontSize = 18.sp, modifier = Modifier.padding(8.dp))
+            }
+
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 Text("Player Score: $playerScore", fontSize = 18.sp, modifier = Modifier.padding(8.dp))
                 Spacer(modifier = Modifier.width(16.dp))
@@ -116,8 +131,17 @@ fun GameScreen() {
                                 updateScore(playerDice, computerDice, { newComputerDice -> computerDice = newComputerDice }, { score -> playerScore += score }, { score -> computerScore += score })
                                 rollsLeft = 3
                                 selectedDice = List(5) { false }
-                                if (playerScore >= targetScore) winner = "Player"
-                                else if (computerScore >= targetScore) winner = "Computer"
+                                if (playerScore >= targetScore && computerScore >= targetScore) {
+                                    if (playerScore == computerScore) {
+                                        tieBreakerRound { newWinner -> winner = newWinner }
+                                    } else {
+                                        winner = if (playerScore > computerScore) "Player" else "Computer"
+                                    }
+                                } else if (playerScore >= targetScore) {
+                                    winner = "Player"
+                                } else if (computerScore >= targetScore) {
+                                    winner = "Computer"
+                                }
                             }
                         }
                     },
@@ -129,16 +153,17 @@ fun GameScreen() {
 
                 Button(
                     onClick = {
-                        repeat(rollsLeft) {
-                            computerDice = computerDice.map {
-                                if (Random.nextBoolean()) Random.nextInt(1, 7) else it
-                            }
+                        while (rollsLeft > 0) {
+                            computerDice = computerDice.map { if (Random.nextBoolean()) Random.nextInt(1, 7) else it }
+                            rollsLeft--
                         }
-                        updateScore(playerDice, computerDice, { newComputerDice -> computerDice = newComputerDice }, { score -> playerScore += score }, { score -> computerScore += score })
+                        updateScore(playerDice, computerDice, { newComputerDice -> computerDice = newComputerDice },
+                            { score -> playerScore += score }, { score -> computerScore += score })
                         rollsLeft = 3
                         selectedDice = List(5) { false }
-                        if (playerScore >= targetScore) winner = "Player"
-                        else if (computerScore >= targetScore) winner = "Computer"
+                        if (playerScore >= targetScore || computerScore >= targetScore) {
+                            winner = if (playerScore > computerScore) "Player" else "Computer"
+                        }
                     },
                     shape = RoundedCornerShape(10.dp),
                     enabled = rollsLeft < 3
@@ -151,6 +176,11 @@ fun GameScreen() {
 
     if (winner != null) {
         WinnerDialog(winner!!) {
+            if (winner == "Player") {
+                humanWins++ // Increase human win count
+            } else {
+                computerWins++ // Increase computer win count
+            }
             playerScore = 0
             computerScore = 0
             rollsLeft = 3
@@ -161,24 +191,79 @@ fun GameScreen() {
 }
 
 
+
+//@Composable
+//fun WinnerDialog(winner: String, onDismiss: () -> Unit) {
+//    val context = LocalContext.current
+//    val activity = remember { context as? Activity }  // Get current activity context
+//
+//    AlertDialog(
+//        onDismissRequest = {
+//            activity?.finish()  // Finish the activity when back button is pressed
+//        },
+//        title = {
+//            Text(
+//                text = if (winner == "Player") "You Win!" else "You Lose!",
+//                fontSize = 24.sp,
+//                color = if (winner == "Player") Color.Green else Color.Red
+//            )
+//        },
+//        confirmButton = {
+//            Button(onClick = {
+//                activity?.finish()  // Finish the activity when "Play Again" is clicked
+//            }) {
+//                Text("Play Again")
+//            }
+//        }
+//    )
+//}
+
+//@Composable
+//fun WinnerDialog(winner: String, onDismiss: () -> Unit) {
+//    AlertDialog(
+//        onDismissRequest = { onDismiss() },
+//        title = {
+//            Text(
+//                text = if (winner == "Player") "You Win!" else "You Lose!",
+//                fontSize = 24.sp,
+//                color = if (winner == "Player") Color.Green else Color.Red
+//            )
+//        },
+//        confirmButton = {
+//            Button(onClick = { onDismiss() }) {
+//                Text("Play Again")
+//            }
+//        }
+//    )
+//}
+
 @Composable
 fun WinnerDialog(winner: String, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            activity?.finish() // Go back to homepage by finishing the current activity
+        },
         title = {
             Text(
                 text = if (winner == "Player") "You Win!" else "You Lose!",
                 fontSize = 24.sp,
-                color = if (winner == "Player") Color.Green else Color.Red  // Apply color only to text
+                color = if (winner == "Player") Color.Green else Color.Red
             )
         },
         confirmButton = {
-            Button(onClick = onDismiss) {
+            Button(onClick = {
+                activity?.finish() // Finish activity on button click
+            }) {
                 Text("Play Again")
             }
         }
     )
 }
+
+
 
 
 
@@ -226,6 +311,19 @@ fun updateScore(
     setPlayerScore(playerTotal)
     setComputerScore(computerTotal)
 }
+
+fun tieBreakerRound(setWinner: (String) -> Unit) {
+    var playerTieBreaker: Int
+    var computerTieBreaker: Int
+
+    do {
+        playerTieBreaker = List(5) { Random.nextInt(1, 7) }.sum()
+        computerTieBreaker = List(5) { Random.nextInt(1, 7) }.sum()
+    } while (playerTieBreaker == computerTieBreaker)  // Keep rolling until there's a winner
+
+    setWinner(if (playerTieBreaker > computerTieBreaker) "Player" else "Computer")
+}
+
 
 fun getDiceImage(diceValue: Int): Int {
     return when (diceValue) {

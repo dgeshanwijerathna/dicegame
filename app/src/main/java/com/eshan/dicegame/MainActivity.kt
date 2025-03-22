@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eshan.dicegame.ui.theme.MyApplicationTheme
 import androidx.compose.ui.res.painterResource
+import androidx.compose.runtime.saveable.rememberSaveable
 
 
 class MainActivity : ComponentActivity() {
@@ -41,7 +42,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier, activity: Activity) {
-    var showPopup by remember { mutableStateOf(false) }
+    var showPopup by rememberSaveable { mutableStateOf(false) }
 
     Box(
         modifier = modifier.fillMaxSize()
