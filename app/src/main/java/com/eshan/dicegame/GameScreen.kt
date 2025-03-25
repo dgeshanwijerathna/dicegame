@@ -239,13 +239,8 @@ fun GameScreen() {
 
 @Composable
 fun WinnerDialog(winner: String, onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val activity = context as? Activity
-
     AlertDialog(
-        onDismissRequest = {
-            activity?.finish() // Go back to homepage by finishing the current activity
-        },
+        onDismissRequest = { onDismiss() },
         title = {
             Text(
                 text = if (winner == "Player") "You Win!" else "You Lose!",
@@ -254,14 +249,13 @@ fun WinnerDialog(winner: String, onDismiss: () -> Unit) {
             )
         },
         confirmButton = {
-            Button(onClick = {
-                activity?.finish() // Finish activity on button click
-            }) {
+            Button(onClick = { onDismiss() }) {
                 Text("Play Again")
             }
         }
     )
 }
+
 
 
 
