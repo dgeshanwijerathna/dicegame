@@ -7,23 +7,21 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
 import com.eshan.dicegame.ui.theme.MyApplicationTheme
-import androidx.compose.ui.res.painterResource
-import androidx.compose.runtime.saveable.rememberSaveable
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,10 +37,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier, activity: Activity) {
-    var showPopup by rememberSaveable { mutableStateOf(false) }
+    var showPopup by remember { mutableStateOf(false) }
 
     Box(
         modifier = modifier.fillMaxSize()
@@ -58,32 +55,48 @@ fun HomeScreen(modifier: Modifier = Modifier, activity: Activity) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(50.dp))
+
             Text(
-                text = "Welcome to the Dice Game!",
+                text = "Welcome to the\nDice Game",
                 color = Color.White,
-                modifier = Modifier.padding(bottom = 16.dp)
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                lineHeight = 40.sp
             )
 
-            Button(
-                onClick = {
-                    val intent = Intent(activity, GameActivity::class.java)
-                    activity.startActivity(intent)
-                },
-                modifier = Modifier.padding(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
-            ) {
-                Text(text = "New Game", color = Color.White)
-            }
+            Spacer(modifier = Modifier.weight(1f))
 
-            Button(
-                onClick = { showPopup = true },
-                modifier = Modifier.padding(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Text(text = "About", color = Color.White)
+                Button(
+                    onClick = {
+                        val intent = Intent(activity, GameActivity::class.java)
+                        activity.startActivity(intent)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .padding(8.dp)
+                ) {
+                    Text(text = "New game", color = Color.Black)
+                }
+
+                Button(
+                    onClick = { showPopup = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .padding(8.dp)
+                ) {
+                    Text(text = "About", color = Color.Black)
+                }
             }
         }
 
@@ -93,7 +106,10 @@ fun HomeScreen(modifier: Modifier = Modifier, activity: Activity) {
                 title = { Text(text = "w2052115 / 20221126 - Eshan Wijerathna") },
                 text = {
                     Text(
-                        text = "I confirm that I understand what plagiarism is...",
+                        text = "I confirm that I understand what plagiarism is and have read and understood the section on Assessment " +
+                                "Offences in the Essential Information for Students. " +
+                                "The work that I have submitted is entirely my own. " +
+                                "Any work from other authors is duly referenced  and acknowledged.\n",
                         color = Color.Black
                     )
                 },
@@ -106,12 +122,3 @@ fun HomeScreen(modifier: Modifier = Modifier, activity: Activity) {
         }
     }
 }
-
-
-//@Preview(showBackground = true)
-//@Composable
-//fun GreetingPreview() {
-//    MyApplicationTheme {
-//        HomeScreen()
-//    }
-//}
